@@ -1,12 +1,16 @@
 import sys
+from random import choices
 
 from fastapi import APIRouter, Depends, Response, status
-from pydantic import BaseModel
+from fastapi.responses import ORJSONResponse
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing_extensions import Any, Optional, Union
 
+from core import config
 from db.db import get_session
 from models import models
+
 from . import schemas
 
 router = APIRouter()
@@ -27,8 +31,10 @@ async def create_url(request_body: schemas.CreateOriginalURL,
     """
     obj_url = models.URL(
         original_url=str(request_body.original_url),
-        short_url=('http://127.0.0.1:8000/'
-                   + str(abs(hash(request_body.original_url))))
+        short_url=''.join(
+            choices(config.app_settings.short_url_chars,
+                    k=config.app_settings.short_url_length)
+        )
     )
     db.add(obj_url)
     await db.commit()
