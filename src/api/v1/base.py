@@ -25,8 +25,10 @@ default_paginator = schemas.Paginator(limit=2, offset=0)
 @router.post('/',
              response_model=schemas.GetShortURL,
              status_code=status.HTTP_201_CREATED)
-async def create_url(request_body: schemas.CreateOriginalURL,
-                     db: AsyncSession = Depends(get_session),):
+async def create_url(
+    request_body: schemas.CreateOriginalURL,
+    db: AsyncSession = Depends(get_session),
+):
     """
     Создает сокращенный вариант переданного URL.
     """
@@ -58,8 +60,7 @@ async def ping_db(db: AsyncSession = Depends(get_session)):
 
 
 @router.get('/{shorten_url_id}',
-            status_code=status.HTTP_307_TEMPORARY_REDIRECT
-            )
+            status_code=status.HTTP_307_TEMPORARY_REDIRECT)
 async def redirect_by_shorten_id(
     shorten_url_id: int,
     user_agent: Annotated[str | None, Header()] = None,
@@ -81,8 +82,10 @@ async def redirect_by_shorten_id(
 
 
 @router.delete('/{shorten-url-id}', tags=['additional'])
-async def set_inactive_shorten_url(shorten_url_id: int,
-                                   db: AsyncSession = Depends(get_session),):
+async def set_inactive_shorten_url(
+    shorten_url_id: int,
+    db: AsyncSession = Depends(get_session),
+):
     """
     Помечает запись с shorten-url-id как неактивную.
     """
