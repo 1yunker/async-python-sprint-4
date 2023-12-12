@@ -100,7 +100,9 @@ async def get_shorten_url_status(
     shorten_url_id: int,
     db: AsyncSession = Depends(get_session),
     full_info: bool = False,
-    paginator: schemas.Paginator = Depends(default_paginator),
+    max_result: Optional[int] = 10,
+    offset: Optional[int] = 0,
+    # paginator: schemas.Paginator = Depends(default_paginator),
 ):
     """
     Возвращает информацию о количестве переходов, совершенных по ссылке.
@@ -112,9 +114,9 @@ async def get_shorten_url_status(
         lst_clicks = (await db.execute(query)).all()
         return {
             'Clicks': obj_url.clicks,
-            # 'Clicks-info': lst_clicks
-            'Clicks-info': lst_clicks[
-                paginator.offset: paginator.offset + paginator.limit]
+            # 'Clicks-info': lst_clicks[
+            #     paginator.offset: paginator.offset + paginator.limit]
+            'Full-info': lst_clicks[offset: offset + max_result]
         }
     else:
         return {
