@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, Header, Response, status
 from fastapi.responses import RedirectResponse
 from httpx import request
 from pydantic import BaseModel, ConfigDict
+from sqlalchemy import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from typing import Annotated
@@ -19,7 +20,7 @@ from models.models import URL, Click
 from . import schemas
 
 router = APIRouter()
-default_paginator = schemas.Paginator(limit=2, offset=0)
+# default_paginator = schemas.Paginator(limit=2, offset=0)
 
 
 @router.post('/',
@@ -43,6 +44,44 @@ async def create_url(
     await db.commit()
     await db.refresh(obj_url)
     return obj_url
+
+
+@router.post('/shorten',
+             response_model=list[schemas.GetShortURL],
+             status_code=status.HTTP_201_CREATED)
+async def batch_upload_urls(
+    request_body: list[schemas.CreateOriginalURL],
+    db: AsyncSession = Depends(get_session),
+):
+    """
+    Пакетно создает сокращенный вариант для переданного списка URL.
+    Принимает:  [
+                    {"original-url": "<URL-for-shorten>"},
+                    ...
+                ]
+    Возвращает: [
+                    {
+                        "short-id": "<shoten-id>",
+                        "short-url": "http://...",
+                    },
+                    ...
+                ]
+    """
+    lst_obj = [
+        URL(
+            original_url=str(request_body[i].original_url),
+            short_url=''.join(
+                choices(config.app_settings.short_url_chars,
+                        k=config.app_settings.short_url_length)
+            )
+        )
+        for i in range(len(request_body))
+    ]
+    db.add_all(lst_obj)
+    await db.flush(lst_obj)
+    await db.commit()
+
+    return lst_obj
 
 
 @router.get('/ping', tags=['additional'])
@@ -122,23 +161,3 @@ async def get_shorten_url_status(
         return {
             'Clicks': obj_url.clicks
         }
-
-
-# @router.post('/shorten/',
-#              response_model=list[CollectionItem],
-#              status_code=status.HTTP_201_CREATED)
-# async def create_item(item: CollectionItem):
-#     """
-#     Принимает:  [
-#                     {"original-url": "<URL-for-shorten>"},
-#                     ...
-#                 ]
-#     Возвращает: [
-#                     {
-#                         "short-id": "<shoten-id>",
-#                         "short-url": "http://...",
-#                     },
-#                     ...
-#                 ]
-#     """
-#     return item
