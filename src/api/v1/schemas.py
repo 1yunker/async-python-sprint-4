@@ -33,3 +33,6 @@ class Paginator:
             self.offset,
             self.limit
         )
+
+    async def __call__(self):
+        return self

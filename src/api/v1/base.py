@@ -19,7 +19,7 @@ from models.models import URL, Click
 from . import schemas
 
 router = APIRouter()
-paginator = schemas.Paginator()
+default_paginator = schemas.Paginator(limit=2, offset=0)
 
 
 @router.post('/',
@@ -93,11 +93,11 @@ async def set_inactive_shorten_url(shorten_url_id: int,
 
 
 @router.get('/{shorten-url-id}/status')
-async def get_status_shorten_url(
+async def get_shorten_url_status(
     shorten_url_id: int,
     db: AsyncSession = Depends(get_session),
     full_info: bool = False,
-    # paginator=Depends(paginator),
+    paginator: schemas.Paginator = Depends(default_paginator),
 ):
     """
     Возвращает информацию о количестве переходов, совершенных по ссылке.
@@ -109,9 +109,9 @@ async def get_status_shorten_url(
         lst_clicks = (await db.execute(query)).all()
         return {
             'Clicks': obj_url.clicks,
-            'Clicks-info': lst_clicks
-            # 'Clicks-info': lst_clicks[
-            #     paginator.offset: paginator.offset + paginator.limit]
+            # 'Clicks-info': lst_clicks
+            'Clicks-info': lst_clicks[
+                paginator.offset: paginator.offset + paginator.limit]
         }
     else:
         return {
