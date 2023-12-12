@@ -2,23 +2,19 @@ import sys
 from random import choices
 
 from fastapi import APIRouter, Depends, Response, status
-from fastapi.responses import ORJSONResponse
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 from typing_extensions import Any, Optional, Union
 
 from core import config
 from db.db import get_session
-from models import models
+from models.models import URL
 
 from . import schemas
 
 router = APIRouter()
-
-
-@router.get('/')
-async def read_main():
-    return {'msg': 'Hello World'}
 
 
 @router.post('/',
@@ -29,7 +25,7 @@ async def create_url(request_body: schemas.CreateOriginalURL,
     """
     Создает сокращенный вариант переданного URL.
     """
-    obj_url = models.URL(
+    obj_url = URL(
         original_url=str(request_body.original_url),
         short_url=''.join(
             choices(config.app_settings.short_url_chars,
@@ -56,15 +52,28 @@ async def ping_db(db: AsyncSession = Depends(get_session)):
         return {'Database status': status}
 
 
-@router.delete('/{shorten-url-id}', tags=['additional'])
-async def delete_shorten_url(shorten_url_id):
-    pass
+@router.get('/{shorten_url_id}',
+            status_code=status.HTTP_307_TEMPORARY_REDIRECT)
+async def redirect_by_shorten_id(shorten_url_id: int,
+                                 db: AsyncSession = Depends(get_session),):
+    """
+    Возвращает ответ с кодом 307 и оригинальным URL в заголовке Location
+    """
+    obj_url = await db.get(URL, shorten_url_id)
+    return {'Location': obj_url.original_url}
 
-# @router.get('/{shorten_url_id}')
-# async def action_handler(shorten_url_id):
-#     return {
-#         'action': shorten_url_id
-#     }
+
+@router.delete('/{shorten-url-id}', tags=['additional'])
+async def set_inactive_shorten_url(shorten_url_id: int,
+                                   db: AsyncSession = Depends(get_session),):
+    """
+    Помечает запись с shorten-url-id как неактивную.
+    """
+    obj_url = await db.get(URL, shorten_url_id)
+    obj_url.is_active = False
+    db.add(obj_url)
+    await db.commit()
+
 
 # @router.get('/{shorten-url-id}/status')
 # async def status_handler(
