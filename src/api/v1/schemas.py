@@ -21,3 +21,15 @@ class GetShortURL(BaseModel):
 # class URLInfo(URL):
 #     url: str
 #     admin_url: str
+
+class Paginator:
+    def __init__(self, offset: int = 0, limit: int = 10):
+        self.offset = offset
+        self.limit = limit
+
+    def __str__(self):
+        return "{}: offset: {}, limit: {}".format(
+            self.__class__.__name__,
+            self.offset,
+            self.limit
+        )

@@ -18,8 +18,9 @@ class URL(Base):
     id = Column(Integer, primary_key=True)
     original_url = Column(String, index=True)
     short_url = Column(String, unique=True, index=True)
-    is_active = Column(Boolean, default=True)
     clicks = Column(Integer, default=0)
+    is_active = Column(Boolean, default=True)
+    is_private = Column(Boolean, default=False)
     # key = Column(String, unique=True, index=True)
     # secret_key = Column(String, unique=True, index=True)
     tbl_clicks = relationship('Click')
@@ -30,5 +31,5 @@ class Click(Base):
 
     id = Column(Integer, primary_key=True)
     url_id = Column(ForeignKey('urls.id'))
-    user_agent = Column(String)
+    user_agent = Column(String or None)
     created_at = Column(DateTime, server_default=func.now())

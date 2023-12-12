@@ -1,20 +1,25 @@
+from email.policy import default
 import sys
 from random import choices
+from xmlrpc.client import Boolean
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, Header, Response, status
 from fastapi.responses import RedirectResponse
+from httpx import request
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from typing import Annotated
 from typing_extensions import Any, Optional, Union
 
 from core import config
 from db.db import get_session
-from models.models import URL
+from models.models import URL, Click
 
 from . import schemas
 
 router = APIRouter()
+paginator = schemas.Paginator()
 
 
 @router.post('/',
@@ -53,13 +58,25 @@ async def ping_db(db: AsyncSession = Depends(get_session)):
 
 
 @router.get('/{shorten_url_id}',
-            status_code=status.HTTP_307_TEMPORARY_REDIRECT)
-async def redirect_by_shorten_id(shorten_url_id: int,
-                                 db: AsyncSession = Depends(get_session),):
+            status_code=status.HTTP_307_TEMPORARY_REDIRECT
+            )
+async def redirect_by_shorten_id(
+    shorten_url_id: int,
+    user_agent: Annotated[str | None, Header()] = None,
+    db: AsyncSession = Depends(get_session),
+):
     """
     Возвращает ответ с кодом 307 и оригинальным URL в заголовке Location
     """
     obj_url = await db.get(URL, shorten_url_id)
+    if obj_url:
+        obj_click = Click(url_id=obj_url.id,
+                          user_agent=user_agent)
+        db.add(obj_click)
+        obj_url.clicks += 1
+        db.add(obj_url)
+        await db.commit()
+
     return {'Location': obj_url.original_url}
 
 
@@ -75,16 +92,31 @@ async def set_inactive_shorten_url(shorten_url_id: int,
     await db.commit()
 
 
-# @router.get('/{shorten-url-id}/status')
-# async def status_handler(
-#     'full-info': str,
-#     param2: Optional[int] = None,
-# ) -> dict[str, Union[str, int, None]]:
-#     return {
-#         'action': 'filter',
-#         'param1': param1,
-#         'param2': param2
-#     }
+@router.get('/{shorten-url-id}/status')
+async def get_status_shorten_url(
+    shorten_url_id: int,
+    db: AsyncSession = Depends(get_session),
+    full_info: bool = False,
+    # paginator=Depends(paginator),
+):
+    """
+    Возвращает информацию о количестве переходов, совершенных по ссылке.
+    """
+    obj_url = await db.get(URL, shorten_url_id)
+    if full_info:
+        query = select(Click.created_at, Click.user_agent
+                       ).where(Click.url_id == shorten_url_id)
+        lst_clicks = (await db.execute(query)).all()
+        return {
+            'Clicks': obj_url.clicks,
+            'Clicks-info': lst_clicks
+            # 'Clicks-info': lst_clicks[
+            #     paginator.offset: paginator.offset + paginator.limit]
+        }
+    else:
+        return {
+            'Clicks': obj_url.clicks
+        }
 
 
 # @router.post('/shorten/',
