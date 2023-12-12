@@ -1,10 +1,8 @@
 import asyncio
+
 import uvicorn
-from fastapi import Depends, FastAPI, Header, HTTPException, Request, status
-from fastapi.exceptions import RequestValidationError
+from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse
-from pydantic import BaseModel, Field
-from typing_extensions import Annotated, Union
 
 from api.v1 import base
 from core import config

@@ -1,4 +1,4 @@
-from pydantic import AnyUrl, BaseModel, ConfigDict, Field
+from pydantic import AnyUrl, BaseModel, Field
 
 
 class CreateOriginalURL(BaseModel):
@@ -6,8 +6,6 @@ class CreateOriginalURL(BaseModel):
 
 
 class GetShortURL(BaseModel):
-    # model_config = ConfigDict(from_attributes=True)
-
     id: int = Field(serialization_alias='short-id')
     short_url: str = Field(serialization_alias='short-url')
     # type: public|private = public

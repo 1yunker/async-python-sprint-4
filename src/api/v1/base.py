@@ -1,16 +1,20 @@
-from email.policy import default
-import sys
 from random import choices
-from xmlrpc.client import Boolean
+from typing import Annotated
 
-from fastapi import APIRouter, Depends, Header, Response, status
-from fastapi.responses import RedirectResponse
-from httpx import request
-from pydantic import BaseModel, ConfigDict
-from sqlalchemy import insert
+from fastapi import (
+    APIRouter,
+    Depends,
+    Header,
+    HTTPException,
+    Request,
+    Response,
+    status,
+)
+
+# from fastapi.exceptions import RequestValidationError
+# from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from typing import Annotated
 from typing_extensions import Any, Optional, Union
 
 from core import config
@@ -47,6 +51,7 @@ async def create_url(
 
 
 @router.post('/shorten',
+             tags=['additional'],
              response_model=list[schemas.GetShortURL],
              status_code=status.HTTP_201_CREATED)
 async def batch_upload_urls(
