@@ -3,9 +3,9 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
 from core.config import app_settings
+from db.db import get_session
 from main import app
 from models.base import Base
-from db.db import get_session
 
 client = TestClient(app=app)
 
@@ -39,7 +39,7 @@ def test_create_url():
         'api/v1/',
         json={'original-url': 'http://example.com/'}
     )
-    assert response.status_code == 201    
+    assert response.status_code == 201
 
 
 def test_batch_upload_urls():

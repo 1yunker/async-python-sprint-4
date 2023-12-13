@@ -14,7 +14,7 @@ def generate_short_id() -> str:
 
 def create_url_obj(request_body: schemas.OriginalURL) -> URL:
     short_id = generate_short_id()
-    return URL(        
+    return URL(
         original_url=str(request_body.original_url),
         short_id=short_id,
         short_url=''.join([

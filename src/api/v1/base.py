@@ -1,14 +1,10 @@
 import logging
-from random import choices
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, Response, status
-
-# from fastapi.exceptions import RequestValidationError
-# from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from typing_extensions import Any, Optional, Union
+from typing_extensions import Optional
 
 from core import config
 from core.logger import LOGGING

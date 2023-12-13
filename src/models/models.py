@@ -21,7 +21,6 @@ class URL(Base):
     short_id = Column(String, unique=True, index=True)
     clicks = Column(Integer, default=0)
     is_active = Column(Boolean, default=True)
-    # is_private = Column(Boolean, default=False)
 
     tbl_clicks = relationship('Click')
 

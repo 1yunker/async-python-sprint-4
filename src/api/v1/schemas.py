@@ -14,4 +14,3 @@ class FullURL(ShortURL):
     original_url: AnyUrl = Field(serialization_alias='original-url')
     is_active: bool
     clicks: int
-    # type: public|private = public
