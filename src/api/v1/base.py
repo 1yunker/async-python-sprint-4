@@ -87,7 +87,8 @@ async def batch_upload_urls(
     return lst_obj
 
 
-@router.get('/ping', tags=['additional'])
+@router.get('/ping',
+            tags=['additional'])
 async def ping_db(db: AsyncSession = Depends(get_session)) -> dict():
     """
     Возвращает информацию о статусе доступности БД.
@@ -111,19 +112,24 @@ async def redirect_by_shorten_id(
     """
     Возвращает ответ с кодом 307 и оригинальным URL в заголовке Location.
     """
-    obj_url = await db.get(URL, shorten_url_id)
-    if obj_url:
-        obj_click = Click(url_id=obj_url.id,
-                          user_agent=user_agent)
-        db.add(obj_click)
-        obj_url.clicks += 1
-        db.add(obj_url)
-        await db.commit()
+    try:
+        obj_url = await db.get(URL, shorten_url_id)
+        if obj_url:
+            obj_click = Click(url_id=obj_url.id, user_agent=user_agent)
+            db.add(obj_click)
+            obj_url.clicks += 1
+            db.add(obj_url)
+            await db.commit()
 
-    return {'Location': obj_url.original_url}
+        return {'Location': obj_url.original_url}
+
+    except Exception as err:
+        logger.info(err)
+        return Response(status_code=status.HTTP_404_NOT_FOUND)
 
 
-@router.delete('/{shorten-url-id}', tags=['additional'])
+@router.delete('/{shorten-url-id}',
+               tags=['additional'])
 async def set_inactive_shorten_url(
     shorten_url_id: int,
     db: AsyncSession = Depends(get_session),
@@ -136,6 +142,7 @@ async def set_inactive_shorten_url(
         obj_url.is_active = False
         db.add(obj_url)
         await db.commit()
+
     except Exception as err:
         logger.info(err)
         return Response(status_code=status.HTTP_404_NOT_FOUND)
@@ -146,28 +153,33 @@ async def get_shorten_url_status(
     shorten_url_id: int,
     db: AsyncSession = Depends(get_session),
     full_info: bool = False,
-    max_result: Optional[int] = 10,
-    offset: Optional[int] = 0,
+    max_result: Optional[int] = config.app_settings.pagiantor_limit,
+    offset: Optional[int] = config.app_settings.pagiantor_offset,
     # paginator: schemas.Paginator = Depends(default_paginator),
 ) -> dict():
     """
     Возвращает информацию о количестве переходов, совершенных по ссылке.
     """
-    obj_url = await db.get(URL, shorten_url_id)
-    if full_info:
-        query = select(
-            Click.created_at, Click.user_agent
-        ).where(
-            Click.url_id == shorten_url_id
-        )
-        lst_clicks = (await db.execute(query)).all()
-        return {
-            'Clicks': obj_url.clicks,
-            # 'Clicks-info': lst_clicks[
-            #     paginator.offset: paginator.offset + paginator.limit]
-            'Full-info': lst_clicks[offset: offset + max_result]
-        }
-    else:
-        return {
-            'Clicks': obj_url.clicks
-        }
+    try:
+        obj_url = await db.get(URL, shorten_url_id)
+        if full_info:
+            query = select(
+                Click.created_at, Click.user_agent
+            ).where(
+                Click.url_id == shorten_url_id
+            )
+            lst_clicks = (await db.execute(query)).all()
+            return {
+                'Clicks': obj_url.clicks,
+                # 'Clicks-info': lst_clicks[
+                #     paginator.offset: paginator.offset + paginator.limit]
+                'Full-info': lst_clicks[offset: offset + max_result]
+            }
+        else:
+            return {
+                'Clicks': obj_url.clicks
+            }
+
+    except Exception as err:
+        logger.info(err)
+        return Response(status_code=status.HTTP_404_NOT_FOUND)

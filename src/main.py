@@ -12,6 +12,7 @@ app = FastAPI(
     title=config.app_settings.app_title,
     default_response_class=ORJSONResponse,
 )
+app.include_router(base.router, prefix='/api/v1')
 
 
 @app.middleware('http')
@@ -24,7 +25,6 @@ async def check_allowed_ip(request: Request, call_next):
 
     return await call_next(request)
 
-app.include_router(base.router, prefix='/api/v1')
 
 if __name__ == '__main__':
     # Перед стартом сервера пересоздаем таблицы в БД
