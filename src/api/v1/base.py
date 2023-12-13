@@ -1,15 +1,7 @@
 from random import choices
 from typing import Annotated
 
-from fastapi import (
-    APIRouter,
-    Depends,
-    Header,
-    HTTPException,
-    Request,
-    Response,
-    status,
-)
+from fastapi import APIRouter, Depends, Header, status
 
 # from fastapi.exceptions import RequestValidationError
 # from fastapi.responses import RedirectResponse

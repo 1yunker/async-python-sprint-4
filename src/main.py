@@ -1,7 +1,7 @@
 import asyncio
 
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response, status
 from fastapi.responses import ORJSONResponse
 
 from api.v1 import base
@@ -12,8 +12,19 @@ app = FastAPI(
     title=config.app_settings.app_title,
     default_response_class=ORJSONResponse,
 )
-app.include_router(base.router, prefix='/api/v1')
 
+
+@app.middleware('http')
+async def check_allowed_ip(request: Request, call_next):
+    """
+    Блокирует доступ к сервису из запрещённых подсетей (black list).
+    """
+    if request.client.host in config.app_settings.black_list:
+        return Response(status_code=status.HTTP_403_FORBIDDEN)
+
+    return await call_next(request)
+
+app.include_router(base.router, prefix='/api/v1')
 
 if __name__ == '__main__':
     asyncio.run(create_tables_in_db())

@@ -14,6 +14,11 @@ class AppSettings(BaseSettings):
     pagiantor_offset: int = 0
     pagiantor_limit: int = 10
 
+    black_list: list[str] = [
+        # '127.0.0.1',
+        '56.24.15.106'
+    ]
+
     class Config:
         env_file = '.env.example'
 
