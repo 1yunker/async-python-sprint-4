@@ -114,14 +114,15 @@ async def redirect_by_shorten_id(
     """
     try:
         obj_url = await db.get(URL, shorten_url_id)
-        if obj_url:
+        if obj_url.is_active:
             obj_click = Click(url_id=obj_url.id, user_agent=user_agent)
             db.add(obj_click)
             obj_url.clicks += 1
             db.add(obj_url)
             await db.commit()
 
-        return {'Location': obj_url.original_url}
+            return {'Location': obj_url.original_url}
+        return Response(status_code=status.HTTP_410_GONE)
 
     except Exception as err:
         logger.info(err)
