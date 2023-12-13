@@ -8,17 +8,14 @@ class CreateOriginalURL(BaseModel):
 class GetShortURL(BaseModel):
     id: int = Field(serialization_alias='short-id')
     short_url: str = Field(serialization_alias='short-url')
+
+
+class GetFullShortURL(GetShortURL):
+    original_url: AnyUrl = Field(serialization_alias='original-url')
+    is_active: bool
+    clicks: int
     # type: public|private = public
-    # is_active: bool
-    # clicks: int
 
-    # class Config:
-    #     orm_mode = True
-
-
-# class URLInfo(URL):
-#     url: str
-#     admin_url: str
 
 class Paginator:
     def __init__(self, offset: int = 0, limit: int = 10):

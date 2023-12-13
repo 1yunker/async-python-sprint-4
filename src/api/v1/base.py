@@ -103,7 +103,7 @@ async def redirect_by_shorten_id(
     db: AsyncSession = Depends(get_session),
 ):
     """
-    Возвращает ответ с кодом 307 и оригинальным URL в заголовке Location
+    Возвращает ответ с кодом 307 и оригинальным URL в заголовке Location.
     """
     obj_url = await db.get(URL, shorten_url_id)
     if obj_url:
@@ -145,8 +145,11 @@ async def get_shorten_url_status(
     """
     obj_url = await db.get(URL, shorten_url_id)
     if full_info:
-        query = select(Click.created_at, Click.user_agent
-                       ).where(Click.url_id == shorten_url_id)
+        query = select(
+            Click.created_at, Click.user_agent
+        ).where(
+            Click.url_id == shorten_url_id
+        )
         lst_clicks = (await db.execute(query)).all()
         return {
             'Clicks': obj_url.clicks,

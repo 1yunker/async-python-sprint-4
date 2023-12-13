@@ -20,9 +20,8 @@ class URL(Base):
     short_url = Column(String, unique=True, index=True)
     clicks = Column(Integer, default=0)
     is_active = Column(Boolean, default=True)
-    is_private = Column(Boolean, default=False)
-    # key = Column(String, unique=True, index=True)
-    # secret_key = Column(String, unique=True, index=True)
+    # is_private = Column(Boolean, default=False)
+
     tbl_clicks = relationship('Click')
 
 

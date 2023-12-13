@@ -1,4 +1,5 @@
 import asyncio
+import logging
 
 import uvicorn
 from fastapi import FastAPI, Request, Response, status
@@ -27,9 +28,13 @@ async def check_allowed_ip(request: Request, call_next):
 app.include_router(base.router, prefix='/api/v1')
 
 if __name__ == '__main__':
+    # Перед стартом сервера создаем таблицы в БД
     asyncio.run(create_tables_in_db())
+
     uvicorn.run(
         'main:app',
         host=config.app_settings.project_host,
         port=config.app_settings.project_port,
+        reload=True,
+        log_level=logging.INFO,
     )
