@@ -1,7 +1,8 @@
+import logging
 from random import choices
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Header, status
+from fastapi import APIRouter, Depends, Header, Response, status
 
 # from fastapi.exceptions import RequestValidationError
 # from fastapi.responses import RedirectResponse
@@ -10,12 +11,17 @@ from sqlalchemy.future import select
 from typing_extensions import Any, Optional, Union
 
 from core import config
+from core.logger import LOGGING
 from db.db import get_session
 from models.models import URL, Click
 
 from . import schemas
 
 router = APIRouter()
+
+logging.basicConfig = LOGGING
+logger = logging.getLogger()
+
 # default_paginator = schemas.Paginator(limit=2, offset=0)
 
 
@@ -25,7 +31,7 @@ router = APIRouter()
 async def create_url(
     request_body: schemas.CreateOriginalURL,
     db: AsyncSession = Depends(get_session),
-):
+) -> URL:
     """
     Создает сокращенный вариант переданного URL.
     """
@@ -49,7 +55,7 @@ async def create_url(
 async def batch_upload_urls(
     request_body: list[schemas.CreateOriginalURL],
     db: AsyncSession = Depends(get_session),
-):
+) -> list[URL]:
     """
     Пакетно создает сокращенный вариант для переданного списка URL.
     Принимает:  [
@@ -82,7 +88,7 @@ async def batch_upload_urls(
 
 
 @router.get('/ping', tags=['additional'])
-async def ping_db(db: AsyncSession = Depends(get_session)):
+async def ping_db(db: AsyncSession = Depends(get_session)) -> dict():
     """
     Возвращает информацию о статусе доступности БД.
     """
@@ -101,7 +107,7 @@ async def redirect_by_shorten_id(
     shorten_url_id: int,
     user_agent: Annotated[str | None, Header()] = None,
     db: AsyncSession = Depends(get_session),
-):
+) -> dict():
     """
     Возвращает ответ с кодом 307 и оригинальным URL в заголовке Location.
     """
@@ -121,14 +127,18 @@ async def redirect_by_shorten_id(
 async def set_inactive_shorten_url(
     shorten_url_id: int,
     db: AsyncSession = Depends(get_session),
-):
+) -> None:
     """
     Помечает запись с shorten-url-id как неактивную.
     """
-    obj_url = await db.get(URL, shorten_url_id)
-    obj_url.is_active = False
-    db.add(obj_url)
-    await db.commit()
+    try:
+        obj_url = await db.get(URL, shorten_url_id)
+        obj_url.is_active = False
+        db.add(obj_url)
+        await db.commit()
+    except Exception as err:
+        logger.info(err)
+        return Response(status_code=status.HTTP_404_NOT_FOUND)
 
 
 @router.get('/{shorten-url-id}/status')
@@ -139,7 +149,7 @@ async def get_shorten_url_status(
     max_result: Optional[int] = 10,
     offset: Optional[int] = 0,
     # paginator: schemas.Paginator = Depends(default_paginator),
-):
+) -> dict():
     """
     Возвращает информацию о количестве переходов, совершенных по ссылке.
     """

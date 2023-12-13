@@ -1,4 +1,4 @@
-LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+LOG_FORMAT = '%(asctime)s [%(levelname)s]: %(message)s'
 LOG_DEFAULT_HANDLERS = ['console', ]
 
 LOGGING = {
@@ -11,7 +11,7 @@ LOGGING = {
         'default': {
             '()': 'uvicorn.logging.DefaultFormatter',
             'fmt': '%(levelprefix)s %(message)s',
-            'use_colors': None,
+            'use_colors': True,
         },
         'access': {
             '()': 'uvicorn.logging.AccessFormatter',

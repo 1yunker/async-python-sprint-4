@@ -1,13 +1,12 @@
 import asyncio
-import logging
 
 import uvicorn
 from fastapi import FastAPI, Request, Response, status
 from fastapi.responses import ORJSONResponse
 
 from api.v1 import base
-from core import config
-from db.db import create_tables_in_db
+from core import config, logger
+from db.db import recreate_tables_in_db
 
 app = FastAPI(
     title=config.app_settings.app_title,
@@ -28,13 +27,13 @@ async def check_allowed_ip(request: Request, call_next):
 app.include_router(base.router, prefix='/api/v1')
 
 if __name__ == '__main__':
-    # Перед стартом сервера создаем таблицы в БД
-    asyncio.run(create_tables_in_db())
+    # Перед стартом сервера пересоздаем таблицы в БД
+    asyncio.run(recreate_tables_in_db())
 
     uvicorn.run(
         'main:app',
         host=config.app_settings.project_host,
         port=config.app_settings.project_port,
         reload=True,
-        log_level=logging.INFO,
+        log_config=logger.LOGGING
     )

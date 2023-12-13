@@ -20,7 +20,7 @@ async_session = sessionmaker(
 )
 
 
-async def create_tables_in_db():
+async def recreate_tables_in_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
