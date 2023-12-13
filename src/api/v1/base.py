@@ -14,6 +14,7 @@ from core import config
 from core.logger import LOGGING
 from db.db import get_session
 from models.models import URL, Click
+from services.services import create_list_url_obj, create_url_obj
 
 from . import schemas
 
@@ -22,26 +23,18 @@ router = APIRouter()
 logging.basicConfig = LOGGING
 logger = logging.getLogger()
 
-# default_paginator = schemas.Paginator(limit=2, offset=0)
-
 
 @router.post('/',
-             response_model=schemas.GetShortURL,
+             response_model=schemas.FullURL,
              status_code=status.HTTP_201_CREATED)
 async def create_url(
-    request_body: schemas.CreateOriginalURL,
+    request_body: schemas.OriginalURL,
     db: AsyncSession = Depends(get_session),
 ) -> URL:
     """
     Создает сокращенный вариант переданного URL.
     """
-    obj_url = URL(
-        original_url=str(request_body.original_url),
-        short_url=''.join(
-            choices(config.app_settings.short_url_chars,
-                    k=config.app_settings.short_url_length)
-        )
-    )
+    obj_url = create_url_obj(request_body)
     db.add(obj_url)
     await db.commit()
     await db.refresh(obj_url)
@@ -50,36 +43,16 @@ async def create_url(
 
 @router.post('/shorten',
              tags=['additional'],
-             response_model=list[schemas.GetShortURL],
+             response_model=list[schemas.ShortURL],
              status_code=status.HTTP_201_CREATED)
 async def batch_upload_urls(
-    request_body: list[schemas.CreateOriginalURL],
+    request_body: list[schemas.OriginalURL],
     db: AsyncSession = Depends(get_session),
 ) -> list[URL]:
     """
-    Пакетно создает сокращенный вариант для переданного списка URL.
-    Принимает:  [
-                    {"original-url": "<URL-for-shorten>"},
-                    ...
-                ]
-    Возвращает: [
-                    {
-                        "short-id": "<shoten-id>",
-                        "short-url": "http://...",
-                    },
-                    ...
-                ]
+    Пакетно создает сокращенные варианты для переданного списка URL.
     """
-    lst_obj = [
-        URL(
-            original_url=str(request_body[i].original_url),
-            short_url=''.join(
-                choices(config.app_settings.short_url_chars,
-                        k=config.app_settings.short_url_length)
-            )
-        )
-        for i in range(len(request_body))
-    ]
+    lst_obj = create_list_url_obj(request_body)
     db.add_all(lst_obj)
     await db.flush(lst_obj)
     await db.commit()
@@ -105,7 +78,7 @@ async def ping_db(db: AsyncSession = Depends(get_session)) -> dict():
 @router.get('/{shorten_url_id}',
             status_code=status.HTTP_307_TEMPORARY_REDIRECT)
 async def redirect_by_shorten_id(
-    shorten_url_id: int,
+    shorten_url_id: str,
     user_agent: Annotated[str | None, Header()] = None,
     db: AsyncSession = Depends(get_session),
 ) -> dict():
@@ -113,7 +86,8 @@ async def redirect_by_shorten_id(
     Возвращает ответ с кодом 307 и оригинальным URL в заголовке Location.
     """
     try:
-        obj_url = await db.get(URL, shorten_url_id)
+        query = select(URL).where(URL.short_id == shorten_url_id)
+        obj_url = (await db.scalars(query)).first()
         if obj_url.is_active:
             obj_click = Click(url_id=obj_url.id, user_agent=user_agent)
             db.add(obj_click)
@@ -132,14 +106,16 @@ async def redirect_by_shorten_id(
 @router.delete('/{shorten-url-id}',
                tags=['additional'])
 async def set_inactive_shorten_url(
-    shorten_url_id: int,
+    shorten_url_id: str,
     db: AsyncSession = Depends(get_session),
 ) -> None:
     """
     Помечает запись с shorten-url-id как неактивную.
     """
     try:
-        obj_url = await db.get(URL, shorten_url_id)
+        # obj_url = await db.get(URL, shorten_url_id)
+        query = select(URL).where(URL.short_id == shorten_url_id)
+        obj_url = (await db.scalars(query)).first()
         obj_url.is_active = False
         db.add(obj_url)
         await db.commit()
@@ -151,29 +127,27 @@ async def set_inactive_shorten_url(
 
 @router.get('/{shorten-url-id}/status')
 async def get_shorten_url_status(
-    shorten_url_id: int,
+    shorten_url_id: str,
     db: AsyncSession = Depends(get_session),
     full_info: bool = False,
     max_result: Optional[int] = config.app_settings.pagiantor_limit,
     offset: Optional[int] = config.app_settings.pagiantor_offset,
-    # paginator: schemas.Paginator = Depends(default_paginator),
 ) -> dict():
     """
     Возвращает информацию о количестве переходов, совершенных по ссылке.
     """
     try:
-        obj_url = await db.get(URL, shorten_url_id)
+        query = select(URL).where(URL.short_id == shorten_url_id)
+        obj_url = (await db.scalars(query)).first()
         if full_info:
             query = select(
                 Click.created_at, Click.user_agent
             ).where(
-                Click.url_id == shorten_url_id
+                Click.url_id == obj_url.id
             )
             lst_clicks = (await db.execute(query)).all()
             return {
                 'Clicks': obj_url.clicks,
-                # 'Clicks-info': lst_clicks[
-                #     paginator.offset: paginator.offset + paginator.limit]
                 'Full-info': lst_clicks[offset: offset + max_result]
             }
         else:
