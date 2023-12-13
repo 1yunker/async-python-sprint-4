@@ -1,8 +1,10 @@
 from pydantic import PostgresDsn
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class AppSettings(BaseSettings):
+    model_config = SettingsConfigDict(env_file='.env.example')
+
     app_title: str = 'Default_title'
     database_dsn: PostgresDsn | None = None
     project_host: str = '127.0.0.1'
@@ -18,9 +20,6 @@ class AppSettings(BaseSettings):
         # '127.0.0.1',
         '56.24.15.106'
     ]
-
-    class Config:
-        env_file = '.env.example'
 
 
 app_settings = AppSettings()
