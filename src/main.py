@@ -1,5 +1,3 @@
-import asyncio
-
 import uvicorn
 from fastapi import FastAPI, Request, Response, status
 from fastapi.responses import ORJSONResponse
