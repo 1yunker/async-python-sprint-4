@@ -9,8 +9,8 @@ from typing_extensions import Optional
 from core import config
 from core.logger import LOGGING
 from db.db import get_session
-from models.models import URL, Click
-from services.services import create_list_url_obj, create_url_obj
+from models import URL, Click
+from services import create_list_url_obj, create_url_obj
 
 from . import schemas
 
@@ -58,7 +58,7 @@ async def batch_upload_urls(
 
 @router.get('/ping',
             tags=['additional'])
-async def ping_db(db: AsyncSession = Depends(get_session)) -> dict():
+async def ping_db(db: AsyncSession = Depends(get_session)) -> dict:
     """
     Возвращает информацию о статусе доступности БД.
     """
@@ -77,7 +77,7 @@ async def redirect_by_shorten_id(
     shorten_url_id: str,
     user_agent: Annotated[str | None, Header()] = None,
     db: AsyncSession = Depends(get_session),
-) -> dict():
+) -> dict:
     """
     Возвращает ответ с кодом 307 и оригинальным URL в заголовке Location.
     """
@@ -109,7 +109,6 @@ async def set_inactive_shorten_url(
     Помечает запись с shorten-url-id как неактивную.
     """
     try:
-        # obj_url = await db.get(URL, shorten_url_id)
         query = select(URL).where(URL.short_id == shorten_url_id)
         obj_url = (await db.scalars(query)).first()
         obj_url.is_active = False
@@ -128,7 +127,7 @@ async def get_shorten_url_status(
     full_info: bool = False,
     max_result: Optional[int] = config.app_settings.pagiantor_limit,
     offset: Optional[int] = config.app_settings.pagiantor_offset,
-) -> dict():
+) -> dict:
     """
     Возвращает информацию о количестве переходов, совершенных по ссылке.
     """

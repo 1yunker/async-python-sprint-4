@@ -6,7 +6,6 @@ from fastapi.responses import ORJSONResponse
 
 from api.v1 import base
 from core import config, logger
-from db.db import recreate_tables_in_db
 
 app = FastAPI(
     title=config.app_settings.app_title,
@@ -27,9 +26,6 @@ async def check_allowed_ip(request: Request, call_next):
 
 
 if __name__ == '__main__':
-    # Перед стартом сервера пересоздаем таблицы в БД
-    asyncio.run(recreate_tables_in_db())
-
     uvicorn.run(
         'main:app',
         host=config.app_settings.project_host,
